@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	gohttp "net/http"
 
 	bluemix "github.com/IBM-Bluemix/bluemix-go"
@@ -193,6 +194,8 @@ const (
 	uaaAccessTokenHeader = "X-Auth-Uaa-Token"
 
 	iamRefreshTokenHeader = "X-Auth-Refresh-Token"
+	regionTokenHeader     = "X-Region"
+	accountTokenHeader    = "X-Auth-Resource-Account"
 )
 
 func getDefaultAuthHeaders(serviceName bluemix.ServiceName, c *bluemix.Config) gohttp.Header {
@@ -207,6 +210,17 @@ func getDefaultAuthHeaders(serviceName bluemix.ServiceName, c *bluemix.Config) g
 		h.Set(authorizationHeader, c.IAMAccessToken)
 		h.Set(iamRefreshTokenHeader, c.IAMRefreshToken)
 		h.Set(uaaAccessTokenHeader, c.UAAAccessToken)
+		h.Set(regionTokenHeader, c.Region)
+		bluemixToken := c.IAMAccessToken[7:len(c.IAMAccessToken)]
+		token, err := jwt.Parse(bluemixToken, func(token *jwt.Token) (interface{}, error) {
+			return "", nil
+		})
+		//TODO validate with key
+		if err != nil && !strings.Contains(err.Error(), "key is of invalid type") {
+			return h
+		}
+		claims := token.Claims.(jwt.MapClaims)
+		h.Set(accountTokenHeader, claims["account"].(map[string]interface{})["bss"].(string))
 	case bluemix.IAMPAPService, bluemix.AccountServicev1:
 		h.Set(authorizationHeader, c.IAMAccessToken)
 	default:

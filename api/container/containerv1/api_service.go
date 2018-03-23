@@ -16,6 +16,7 @@ const ErrCodeAPICreation = "APICreationError"
 
 //ContainerServiceAPI is the Aramda K8s client ...
 type ContainerServiceAPI interface {
+	Albs() Albs
 	Clusters() Clusters
 	Workers() Workers
 	WebHooks() Webhooks
@@ -64,6 +65,11 @@ func New(sess *session.Session) (ContainerServiceAPI, error) {
 	return &csService{
 		Client: client.New(config, bluemix.ContainerService, tokenRefreher, nil),
 	}, nil
+}
+
+//Clusters implements Clusters API
+func (c *csService) Albs() Albs {
+	return newAlbAPI(c.Client)
 }
 
 //Clusters implements Clusters API
